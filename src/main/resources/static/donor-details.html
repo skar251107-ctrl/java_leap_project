@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Donor Details | BloodLink</title>
+    <style>
+      :root {
+        --bg: #fff7f7;
+        --panel: #ffffff;
+        --line: #f1d7d7;
+        --brand: #d92d2d;
+        --brand-soft: #ffe2e2;
+        --text: #1b1f2a;
+        --muted: #5f6c7f;
+        --green: #0f8d62;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); font-family: Arial, sans-serif; color: var(--text); }
+      a { color: inherit; text-decoration: none; }
+      .container { width: min(980px, calc(100% - 32px)); margin: 0 auto; }
+      header { background: #fff; border-bottom: 1px solid var(--line); }
+      .nav { display: flex; justify-content: space-between; align-items: center; min-height: 70px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+      .brand-mark { width: 36px; height: 36px; border-radius: 10px; background: var(--brand); color: white; display: grid; place-items: center; }
+      .main { padding: 40px 0; }
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 30px; box-shadow: 0 18px 38px rgba(193, 39, 39, 0.08); }
+      .top { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 28px; flex-wrap: wrap; }
+      .title { font-size: 2rem; margin: 0; }
+      .pill { display: inline-flex; padding: 8px 12px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+      .row { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 18px; margin-top: 16px; }
+      .field { background: #fffaf9; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+      .field span { display: block; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+      .donation-list { list-style: none; padding: 0; margin: 24px 0 0; }
+      .donation-list li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+      .status-ok { color: var(--green); font-weight: 700; }
+      .status-warn { color: var(--brand); font-weight: 700; }
+      .muted { color: var(--muted); }
+      .back { display: inline-flex; margin-top: 20px; padding: 10px 14px; border-radius: 10px; background: var(--brand); color: white; font-weight: 700; }
+      @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container nav">
+        <div class="brand"><span class="brand-mark">B</span> BloodLink</div>
+        <a href="/" class="muted">Back to home</a>
+      </div>
+    </header>
+
+    <main class="container main">
+      <div class="card">
+        <div class="top">
+          <h1 class="title" id="name">Loading donor...</h1>
+          <span class="pill" id="availability">Checking availability</span>
+        </div>
+
+        <div class="row">
+          <div class="field"><span>Blood Group</span><strong id="bloodGroup">-</strong></div>
+          <div class="field"><span>City</span><strong id="city">-</strong></div>
+          <div class="field"><span>Last Donation</span><strong id="lastDonation">-</strong></div>
+          <div class="field"><span>Available</span><strong id="availableText">-</strong></div>
+        </div>
+
+        <h2>Contact donor</h2>
+        <div id="contactActions" class="muted">Loading contact options...</div>
+
+        <h2>Donation history</h2>
+        <ul class="donation-list" id="historyList">
+          <li class="muted">Loading donation history...</li>
+        </ul>
+
+        <a class="back" href="/">Return to BloodLink</a>
+      </div>
+    </main>
+
+    <script>
+      const donorId = new URLSearchParams(window.location.search).get('id');
+      const API_BASE = '/api';
+      async function apiRequest(url) {
+        const response = await fetch(url);
+        if (!response.ok) {
+          let message = 'Unable to load donor information.';
+          try { message = (await response.json()).message || message; } catch (error) { }
+          throw new Error(message);
+        }
+        return response.json();
+      }
+
+      function setAvailability(available) {
+        const pill = document.getElementById('availability');
+        const text = document.getElementById('availableText');
+        pill.textContent = available ? 'Available to donate' : 'Currently unavailable';
+        pill.style.background = available ? 'rgba(15,141,98,0.12)' : 'rgba(217,45,45,0.12)';
+        pill.style.color = available ? '#0f8d62' : '#d92d2d';
+        text.textContent = available ? 'Yes' : 'No';
+      }
+
+      async function loadDonor() {
+        if (!donorId) {
+          document.getElementById('name').textContent = 'Donor not found';
+          return;
+        }
+
+        try {
+          const donor = await apiRequest(`${API_BASE}/donors/${donorId}`);
+          document.getElementById('name').textContent = donor.name;
+          document.getElementById('bloodGroup').textContent = donor.bloodGroup;
+          document.getElementById('city').textContent = donor.city;
+          document.getElementById('lastDonation').textContent = donor.lastDonationDate || 'No previous donation';
+          setAvailability(donor.available);
+          const phone = String(donor.phone || '').trim();
+          const phoneDigits = phone.replace(/\D/g, '');
+          const contact = document.getElementById('contactActions');
+          if (phone) {
+            contact.innerHTML = `<a class="back" href="tel:${encodeURIComponent(phone)}">Call ${phone}</a>${phoneDigits ? ` <a class="back" href="https://wa.me/${phoneDigits}" target="_blank" rel="noopener">WhatsApp</a>` : ''}`;
+          } else {
+            contact.textContent = 'No contact number provided.';
+          }
+
+          const history = await apiRequest(`${API_BASE}/donors/${donorId}/donations`);
+          const list = document.getElementById('historyList');
+          if (!history || history.length === 0) {
+            list.innerHTML = '<li class="muted">No donation history recorded yet.</li>';
+            return;
+          }
+
+          list.innerHTML = history.map(record => `
+            <li>
+              <span>${record.donationDate}</span>
+              <span>${record.hospitalName}</span>
+              <span class="status-ok">Recorded</span>
+            </li>
+          `).join('');
+        } catch (error) {
+          document.getElementById('name').textContent = error.message || 'Unable to load donor';
+          document.getElementById('historyList').innerHTML = `<li class="muted">${error.message || 'No donor data available.'}</li>`;
+        }
+      }
+
+      loadDonor();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage data | BloodLink</title><link rel="stylesheet" href="/bloodlink-pages.css">
+</head>
+<body>
+  <header class="site-header"><div class="container site-nav">
+    <a class="brand" href="/"><span class="brand-mark">B</span> BloodLink</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="/">Home</a><a href="/find-donors.html">Find Donors</a><a href="/become-donor.html">Become a Donor</a><a href="/dashboard.html">Dashboard</a><a href="/manage-records.html" aria-current="page">Manage data</a><a href="/statistics.html">Statistics</a><a href="/about.html">About</a>
+    </nav>
+  </div></header>
+  <main class="container">
+    <div class="page-heading"><span class="kicker">Operations</span><h1>Manage data</h1><p class="lede">Manage blood groups, donors, donation history, and administrator accounts.</p></div>
+    <div class="resource-tabs" role="tablist" aria-label="Record type">
+      <button class="resource-tab" type="button" role="tab" aria-selected="true" data-resource="blood-groups">Blood groups</button>
+      <button class="resource-tab" type="button" role="tab" aria-selected="false" data-resource="donors">Donors</button>
+      <button class="resource-tab" type="button" role="tab" aria-selected="false" data-resource="donations">Record donation</button>
+      <button class="resource-tab" type="button" role="tab" aria-selected="false" data-resource="admin-users">Admin users</button>
+    </div>
+    <p class="status" id="manageStatus" aria-live="polite"></p>
+    <div class="manage-layout">
+      <section class="panel" aria-labelledby="formTitle">
+        <h2 id="formTitle">Add blood group</h2>
+        <form id="recordForm">
+          <div class="form-grid record-fields" id="recordFields"></div>
+          <div class="form-actions">
+            <button class="button" id="saveButton" type="submit">Add blood group</button>
+            <button class="button secondary" id="cancelEditButton" type="button" hidden>Cancel edit</button>
+          </div>
+        </form>
+      </section>
+      <section class="panel" aria-labelledby="listTitle">
+        <div class="record-list-heading"><h2 id="listTitle">Blood groups</h2><span class="record-count" id="recordCount"></span></div>
+        <div class="record-list" id="recordList" aria-live="polite"><p class="muted">Loading records...</p></div>
+      </section>
+    </div>
+  </main>
+  <script src="/bloodlink-pages.js"></script>
+  <script src="/manage-records.js"></script>
+</body>
+</html>

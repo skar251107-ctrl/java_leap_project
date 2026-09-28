@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistics | BloodLink</title><link rel="stylesheet" href="/bloodlink-pages.css">
+</head>
+<body>
+  <header class="site-header"><div class="container site-nav">
+    <a class="brand" href="/"><span class="brand-mark">B</span> BloodLink</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="/">Home</a><a href="/find-donors.html">Find Donors</a><a href="/become-donor.html">Become a Donor</a><a href="/dashboard.html">Dashboard</a><a href="/manage-records.html">Manage data</a><a href="/statistics.html" aria-current="page">Statistics</a><a href="/about.html">About</a>
+    </nav>
+  </div></header>
+  <main class="container">
+    <div class="page-heading"><span class="kicker">Donor network</span><h1>Blood group statistics</h1><p class="lede">Registered donors by blood group. Availability is checked separately using the 90-day donation interval.</p></div>
+    <section class="group-grid" id="groupStats" aria-live="polite"><p class="muted">Loading statistics...</p></section>
+    <p class="status" id="statsStatus" aria-live="polite"></p>
+  </main>
+  <script src="/bloodlink-pages.js"></script>
+  <script>
+    async function loadStatistics() {
+      try {
+        const [counts, donors] = await Promise.all([bloodlinkRequest('/blood-groups/count'), bloodlinkRequest('/donors')]);
+        const availableByGroup = new Map();
+        donors.filter(donor => donor.available).forEach(donor => availableByGroup.set(donor.bloodGroup, (availableByGroup.get(donor.bloodGroup) || 0) + 1));
+        document.getElementById('groupStats').innerHTML = counts.map(({ bloodGroup, count }) => `
+          <article class="group-card"><div><strong>${bloodlinkEscape(bloodGroup)}</strong><span>${availableByGroup.get(bloodGroup) || 0} currently available</span></div><strong>${count}</strong></article>`).join('');
+      } catch (error) {
+        document.getElementById('groupStats').innerHTML = '';
+        bloodlinkSetStatus(document.getElementById('statsStatus'), error.message || 'Statistics could not be loaded.', 'error');
+      }
+    }
+    loadStatistics();
+  </script>
+</body>
+</html>

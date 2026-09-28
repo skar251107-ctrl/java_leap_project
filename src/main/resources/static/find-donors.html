@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Donors | BloodLink</title><link rel="stylesheet" href="/bloodlink-pages.css">
+</head>
+<body>
+  <header class="site-header"><div class="container site-nav">
+    <a class="brand" href="/"><span class="brand-mark">B</span> BloodLink</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="/" >Home</a><a href="/find-donors.html" aria-current="page">Find Donors</a><a href="/become-donor.html">Become a Donor</a><a href="/dashboard.html">Dashboard</a><a href="/manage-records.html">Manage data</a><a href="/statistics.html">Statistics</a><a href="/about.html">About</a>
+    </nav>
+  </div></header>
+  <main class="container">
+    <div class="page-heading"><span class="kicker">Donor directory</span><h1>Find a donor nearby</h1><p class="lede">Filter the available donor network by blood group and city, then contact a donor directly.</p></div>
+    <section class="panel" aria-label="Search donors">
+      <div class="filter-grid">
+        <div class="field"><label for="bloodGroup">Blood group</label><select id="bloodGroup"><option value="">Loading groups...</option></select></div>
+        <div class="field"><label for="city">City</label><input id="city" type="search" placeholder="Enter a city"></div>
+        <button class="button" id="searchButton" type="button">Search donors</button>
+      </div>
+      <p class="status" id="searchStatus" aria-live="polite">Loading available donors...</p>
+      <div class="donor-grid" id="donors"></div>
+    </section>
+  </main>
+  <script src="/bloodlink-pages.js"></script>
+  <script>
+    const statusElement = document.getElementById('searchStatus');
+    bloodlinkLoadBloodGroups(document.getElementById('bloodGroup'), 'Any group')
+      .catch(error => bloodlinkSetStatus(statusElement, error.message || 'Blood groups could not be loaded.', 'error'));
+    async function searchDonors() {
+      bloodlinkSetStatus(statusElement, 'Loading available donors...');
+      const params = new URLSearchParams();
+      const group = document.getElementById('bloodGroup').value;
+      const city = document.getElementById('city').value.trim();
+      if (group) params.set('bloodGroup', group);
+      if (city) params.set('city', city);
+      try {
+        const donors = await bloodlinkRequest(`/donors/search?${params}`);
+        document.getElementById('donors').innerHTML = donors.length ? donors.map(donor => bloodlinkDonorCard(donor, { hideContact: true })).join('') : '<p class="muted">No available donors match those filters.</p>';
+        bloodlinkSetStatus(statusElement, `${donors.length} available donor${donors.length === 1 ? '' : 's'} found.`);
+      } catch (error) {
+        document.getElementById('donors').innerHTML = '';
+        bloodlinkSetStatus(statusElement, error.message || 'Donors could not be loaded.', 'error');
+      }
+    }
+    document.getElementById('searchButton').addEventListener('click', searchDonors);
+    document.getElementById('city').addEventListener('keydown', event => { if (event.key === 'Enter') searchDonors(); });
+    searchDonors();
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | BloodLink</title><link rel="stylesheet" href="/bloodlink-pages.css">
+</head>
+<body>
+  <header class="site-header"><div class="container site-nav">
+    <a class="brand" href="/"><span class="brand-mark">B</span> BloodLink</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="/">Home</a><a href="/find-donors.html">Find Donors</a><a href="/become-donor.html">Become a Donor</a><a href="/dashboard.html" aria-current="page">Dashboard</a><a href="/manage-records.html">Manage data</a><a href="/statistics.html">Statistics</a><a href="/about.html">About</a>
+    </nav>
+  </div></header>
+  <main class="container">
+    <div class="page-heading"><span class="kicker">Network overview</span><h1>BloodLink dashboard</h1><p class="lede">Donor availability, registered blood groups, donation activity, and administrators.</p></div>
+    <section class="metric-grid" id="metrics" aria-live="polite"><p class="muted">Loading dashboard...</p></section>
+    <p class="status" id="dashboardStatus" aria-live="polite"></p>
+    <section class="panel dashboard-requests" aria-labelledby="donationsTitle">
+      <div class="record-list-heading"><h2 id="donationsTitle">Recent donations</h2><a class="button secondary" href="/manage-records.html">Manage data</a></div>
+      <div id="recentDonations" class="record-list" aria-live="polite"><p class="muted">Loading donations...</p></div>
+    </section>
+    <section class="panel" style="margin-top:18px"><h2>Manage donors</h2><div class="donor-grid" id="manageDonors"></div></section>
+  </main>
+  <script src="/bloodlink-pages.js"></script>
+  <script>
+    async function loadDashboard() {
+      try {
+        const [donors, groups, donations, admins] = await Promise.all([
+          bloodlinkRequest('/donors'), bloodlinkRequest('/blood-groups'),
+          bloodlinkRequest('/donations'), bloodlinkRequest('/admin-users')
+        ]);
+        const available = donors.filter(donor => donor.available).length;
+        document.getElementById('metrics').innerHTML = `
+          <article class="metric"><span>Total donors</span><strong>${donors.length}</strong></article>
+          <article class="metric"><span>Available to donate</span><strong>${available}</strong></article>
+          <article class="metric"><span>Blood groups</span><strong>${groups.length}</strong></article>
+          <article class="metric"><span>Donation records</span><strong>${donations.length}</strong></article>
+          <article class="metric"><span>Admin users</span><strong>${admins.length}</strong></article>
+          <article class="metric"><span>Donation cooldown</span><strong>90 days</strong></article>`;
+        document.getElementById('recentDonations').innerHTML = donations.length
+          ? donations.slice(0, 5).map(donation => `
+            <article class="record-item">
+              <div class="record-main">
+                <h3>${bloodlinkEscape(donation.donorName)}</h3>
+                <p>${bloodlinkEscape(donation.donationDate)} · ${bloodlinkEscape(donation.hospitalName)}</p>
+              </div>
+            </article>`).join('')
+          : '<p class="muted">No donations have been recorded yet.</p>';
+        document.getElementById('manageDonors').innerHTML = donors.length
+          ? donors.map(donor => bloodlinkDonorCard(donor, { showDelete: true })).join('')
+          : '<p class="muted">No donors have registered yet.</p>';
+      } catch (error) {
+        bloodlinkSetStatus(document.getElementById('dashboardStatus'), error.message || 'Dashboard data could not be loaded.', 'error');
+        document.getElementById('metrics').innerHTML = '';
+        document.getElementById('recentDonations').innerHTML = '<p class="muted">Donation data could not be loaded.</p>';
+        document.getElementById('manageDonors').innerHTML = '';
+      }
+    }
+    document.getElementById('manageDonors').addEventListener('click', async event => {
+      const button = event.target.closest('[data-delete-donor]');
+      if (!button) return;
+      const donorName = button.dataset.donorName;
+      if (!window.confirm(`Delete ${donorName} and their donation history?`)) return;
+      button.disabled = true;
+      try {
+        const result = await bloodlinkRequest(`/donors/${encodeURIComponent(button.dataset.deleteDonor)}`, { method: 'DELETE' });
+        bloodlinkSetStatus(document.getElementById('dashboardStatus'), result.message);
+        await loadDashboard();
+      } catch (error) {
+        button.disabled = false;
+        bloodlinkSetStatus(document.getElementById('dashboardStatus'), error.message || 'Donor could not be deleted.', 'error');
+      }
+    });
+    loadDashboard();
+  </script>
+</body>
+</html>

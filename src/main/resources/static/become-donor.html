@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Become a Donor | BloodLink</title><link rel="stylesheet" href="/bloodlink-pages.css">
+</head>
+<body>
+  <header class="site-header"><div class="container site-nav">
+    <a class="brand" href="/"><span class="brand-mark">B</span> BloodLink</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="/">Home</a><a href="/find-donors.html">Find Donors</a><a href="/become-donor.html" aria-current="page">Become a Donor</a><a href="/dashboard.html">Dashboard</a><a href="/manage-records.html">Manage data</a><a href="/statistics.html">Statistics</a><a href="/about.html">About</a>
+    </nav>
+  </div></header>
+  <main class="container">
+    <div class="page-heading"><span class="kicker">Join the donor network</span><h1>Become a donor</h1><p class="lede">Register your details so nearby people can find you when they need a matching blood group. Your phone number is kept out of public search results.</p></div>
+    <section class="panel">
+      <form id="donorForm">
+        <div class="form-grid">
+          <div class="field"><label for="name">Full name</label><input id="name" name="name" autocomplete="name" required></div>
+          <div class="field"><label for="phone">Phone number</label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>
+          <div class="field"><label for="bloodGroup">Blood group</label><select id="bloodGroup" name="bloodGroup" required><option value="">Loading groups...</option></select></div>
+          <div class="field"><label for="city">City</label><input id="city" name="city" autocomplete="address-level2" required></div>
+          <div class="field"><label for="lastDonationDate">Last donation date</label><input id="lastDonationDate" name="lastDonationDate" type="date"></div>
+        </div>
+        <p class="status" id="formStatus" aria-live="polite"></p>
+        <button class="button" type="submit">Register as donor</button>
+      </form>
+    </section>
+  </main>
+  <script src="/bloodlink-pages.js"></script>
+  <script>
+    const form = document.getElementById('donorForm');
+    const statusElement = document.getElementById('formStatus');
+    bloodlinkLoadBloodGroups(document.getElementById('bloodGroup'), 'Select group')
+      .catch(error => bloodlinkSetStatus(statusElement, error.message || 'Blood groups could not be loaded.', 'error'));
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const data = new FormData(form);
+      const payload = {
+        name: String(data.get('name') || '').trim(), phone: String(data.get('phone') || '').trim(),
+        bloodGroup: data.get('bloodGroup'), city: String(data.get('city') || '').trim(),
+        lastDonationDate: data.get('lastDonationDate') || null
+      };
+      try {
+        await bloodlinkRequest('/donors', { method: 'POST', body: JSON.stringify(payload) });
+        form.reset();
+        bloodlinkSetStatus(statusElement, 'Registration complete. Thank you for joining the donor network.', 'success');
+      } catch (error) {
+        bloodlinkSetStatus(statusElement, error.message || 'Registration failed. Please try again.', 'error');
+      }
+    });
+  </script>
+</body>
+</html>
